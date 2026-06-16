@@ -32,9 +32,12 @@ Model checkpoints and text encoder weights are licensed separately by their publ
 Useful references:
 
 - Kimodo upstream repository: <https://github.com/nv-tlabs/kimodo>
+- Kimodo installation guide: <https://research.nvidia.com/labs/sil/projects/kimodo/docs/getting_started/installation.html>
+- Kimodo quick start guide: <https://research.nvidia.com/labs/sil/projects/kimodo/docs/getting_started/quick_start.html>
 - Kimodo-SOMA-RP-v1.1 model: <https://huggingface.co/nvidia/Kimodo-SOMA-RP-v1.1>
 - NVIDIA Open Model License: <https://www.nvidia.com/en-us/agreements/enterprise-software/nvidia-open-model-license/>
-- LLM2Vec base model: <https://huggingface.co/McGill-NLP/LLM2Vec-Meta-Llama-3-8B-Instruct-mntp>
+- Gated Meta Llama base model: <https://huggingface.co/meta-llama/Meta-Llama-3-8B-Instruct>
+- LLM2Vec MNTP adapter: <https://huggingface.co/McGill-NLP/LLM2Vec-Meta-Llama-3-8B-Instruct-mntp>
 - LLM2Vec supervised adapter: <https://huggingface.co/McGill-NLP/LLM2Vec-Meta-Llama-3-8B-Instruct-mntp-supervised>
 
 ## Prerequisites
@@ -44,7 +47,18 @@ Useful references:
 3. NVIDIA GPU driver and Docker GPU support for local GPU generation.
 4. Git installed.
 5. The Embodied Space Studio Unreal Engine plugin installed from Fab in an Unreal project.
-6. Enough disk space for model downloads. The LLM2Vec text encoder files can require tens of GB.
+6. A Hugging Face account with access granted to `meta-llama/Meta-Llama-3-8B-Instruct`.
+7. A Hugging Face token available to Docker, usually from `hf auth login`.
+8. Enough disk space for model downloads. The LLM2Vec text encoder stack can require tens of GB.
+
+The official Kimodo virtual-environment setup uses Python 3.10, for example:
+
+```powershell
+conda create -n kimodo python=3.10
+conda activate kimodo
+```
+
+This bridge normally runs Kimodo inside Docker, so users do not need to create a local Python environment unless they want to run Kimodo commands outside the containers.
 
 Confirm Docker is available:
 
@@ -67,6 +81,8 @@ embodied-space-studio-kimodo-bridge/
       config.yaml
       model.safetensors
   text-encoders/
+    meta-llama/
+      Meta-Llama-3-8B-Instruct/
     McGill-NLP/
       LLM2Vec-Meta-Llama-3-8B-Instruct-mntp/
       LLM2Vec-Meta-Llama-3-8B-Instruct-mntp-supervised/
@@ -95,21 +111,50 @@ checkpoints/Kimodo-SOMA-RP-v1.1/model.safetensors
 checkpoints/Kimodo-SOMA-RP-v1.1/config.yaml
 ```
 
-Download the text encoder folders from Hugging Face:
+Before downloading the text encoder, request access to the gated Meta Llama model page and wait until Hugging Face shows that your account has been granted access:
 
-- <https://huggingface.co/McGill-NLP/LLM2Vec-Meta-Llama-3-8B-Instruct-mntp>
-- <https://huggingface.co/McGill-NLP/LLM2Vec-Meta-Llama-3-8B-Instruct-mntp-supervised>
+- <https://huggingface.co/meta-llama/Meta-Llama-3-8B-Instruct>
+
+Then authenticate on the host machine:
+
+```powershell
+pip install --upgrade huggingface_hub
+hf auth login
+```
+
+The Kimodo LLM2Vec text encoder uses three pieces:
+
+- Raw gated base model: <https://huggingface.co/meta-llama/Meta-Llama-3-8B-Instruct>
+- MNTP LoRA adapter: <https://huggingface.co/McGill-NLP/LLM2Vec-Meta-Llama-3-8B-Instruct-mntp>
+- Supervised LoRA adapter: <https://huggingface.co/McGill-NLP/LLM2Vec-Meta-Llama-3-8B-Instruct-mntp-supervised>
 
 Place them under:
 
 ```text
+text-encoders/meta-llama/Meta-Llama-3-8B-Instruct/
 text-encoders/McGill-NLP/LLM2Vec-Meta-Llama-3-8B-Instruct-mntp/
 text-encoders/McGill-NLP/LLM2Vec-Meta-Llama-3-8B-Instruct-mntp-supervised/
 ```
 
-The base text encoder folder should include files such as `model.safetensors.index.json` and its shard files. The supervised adapter folder should include `adapter_model.safetensors`.
+Example manual download commands:
 
-Do not download or configure `LLM2Vec-Meta-Llama-3-8B-Instruct-mntp-adapter` for the default bridge setup. That optional pre-PEFT adapter repository is empty/not required here.
+```powershell
+hf download meta-llama/Meta-Llama-3-8B-Instruct --local-dir text-encoders/meta-llama/Meta-Llama-3-8B-Instruct
+hf download McGill-NLP/LLM2Vec-Meta-Llama-3-8B-Instruct-mntp --local-dir text-encoders/McGill-NLP/LLM2Vec-Meta-Llama-3-8B-Instruct-mntp
+hf download McGill-NLP/LLM2Vec-Meta-Llama-3-8B-Instruct-mntp-supervised --local-dir text-encoders/McGill-NLP/LLM2Vec-Meta-Llama-3-8B-Instruct-mntp-supervised
+```
+
+The raw Meta Llama folder should include files such as `model.safetensors.index.json` and its shard files. The two LLM2Vec folders are LoRA adapters and should include `adapter_model.safetensors` and `adapter_config.json`.
+
+The `McGill-NLP/LLM2Vec-Meta-Llama-3-8B-Instruct-mntp` page may look small in the Hugging Face file browser because it is the MNTP adapter, not the full 8B base model. The full 8B shard files come from the gated `meta-llama/Meta-Llama-3-8B-Instruct` repository.
+
+Do not download a separate `McGill-NLP/LLM2Vec-Meta-Llama-3-8B-Instruct-mntp-adapter` repository. In this bridge, `TEXT_ENCODER_MNTP_ADAPTER_HOST` points to the downloaded `McGill-NLP/LLM2Vec-Meta-Llama-3-8B-Instruct-mntp` folder and Docker mounts it internally as the pre-PEFT adapter.
+
+Runtime loading order:
+
+1. Load raw `meta-llama/Meta-Llama-3-8B-Instruct` as the base model.
+2. Merge the `McGill-NLP/LLM2Vec-Meta-Llama-3-8B-Instruct-mntp` adapter from `TEXT_ENCODER_MNTP_ADAPTER_HOST`.
+3. Apply `McGill-NLP/LLM2Vec-Meta-Llama-3-8B-Instruct-mntp-supervised` as the final supervised adapter exposed by the `text-encoder` service.
 
 ## Configure `.env`
 
@@ -123,13 +168,16 @@ Edit `.env` for your machine:
 
 ```text
 ESS_UNREAL_PROJECT_ROOT=C:/Users/YourName/Documents/Unreal Projects/YourProject
-HF_HOME_HOST=./.cache/huggingface
+HF_HOME_HOST=C:/Users/YourName/.cache/huggingface
 HOST_USER=YourWindowsUserName
 SERVER_PORT=7860
-TEXT_ENCODER_BASE_MODEL_HOST=./text-encoders/McGill-NLP/LLM2Vec-Meta-Llama-3-8B-Instruct-mntp
+TEXT_ENCODER_BASE_MODEL_HOST=./text-encoders/meta-llama/Meta-Llama-3-8B-Instruct
+TEXT_ENCODER_MNTP_ADAPTER_HOST=./text-encoders/McGill-NLP/LLM2Vec-Meta-Llama-3-8B-Instruct-mntp
 TEXT_ENCODER_ADAPTER_HOST=./text-encoders/McGill-NLP/LLM2Vec-Meta-Llama-3-8B-Instruct-mntp-supervised
 UE_BRIDGE_HOST_PORT=18027
 ```
+
+`HF_HOME_HOST` should point to the Hugging Face cache that contains the token created by `hf auth login`. If you prefer to keep the cache inside the bridge folder, place the token under `<BridgeRoot>/.cache/huggingface/token` and use `HF_HOME_HOST=./.cache/huggingface`.
 
 `ESS_UNREAL_PROJECT_ROOT` must point to the Unreal project that has the Fab plugin installed. The bridge runs this file from the Fab plugin:
 
