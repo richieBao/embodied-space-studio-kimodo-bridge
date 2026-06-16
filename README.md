@@ -81,9 +81,8 @@ embodied-space-studio-kimodo-bridge/
       config.yaml
       model.safetensors
   text-encoders/
-    meta-llama/
-      Meta-Llama-3-8B-Instruct/
     McGill-NLP/
+      LLM2Vec-Meta-Llama-3-8B-Instruct-mntp/
       LLM2Vec-Meta-Llama-3-8B-Instruct-mntp-adapter/
       LLM2Vec-Meta-Llama-3-8B-Instruct-mntp-supervised/
   scripts/
@@ -124,14 +123,14 @@ hf auth login
 
 The Kimodo LLM2Vec text encoder uses three pieces:
 
-- Raw gated base model: <https://huggingface.co/meta-llama/Meta-Llama-3-8B-Instruct>
+- Raw gated base model source: <https://huggingface.co/meta-llama/Meta-Llama-3-8B-Instruct>
 - MNTP LoRA adapter source: <https://huggingface.co/McGill-NLP/LLM2Vec-Meta-Llama-3-8B-Instruct-mntp>
 - Supervised LoRA adapter: <https://huggingface.co/McGill-NLP/LLM2Vec-Meta-Llama-3-8B-Instruct-mntp-supervised>
 
 Place them under:
 
 ```text
-text-encoders/meta-llama/Meta-Llama-3-8B-Instruct/
+text-encoders/McGill-NLP/LLM2Vec-Meta-Llama-3-8B-Instruct-mntp/
 text-encoders/McGill-NLP/LLM2Vec-Meta-Llama-3-8B-Instruct-mntp-adapter/
 text-encoders/McGill-NLP/LLM2Vec-Meta-Llama-3-8B-Instruct-mntp-supervised/
 ```
@@ -139,12 +138,12 @@ text-encoders/McGill-NLP/LLM2Vec-Meta-Llama-3-8B-Instruct-mntp-supervised/
 Example manual download commands:
 
 ```powershell
-hf download meta-llama/Meta-Llama-3-8B-Instruct --local-dir text-encoders/meta-llama/Meta-Llama-3-8B-Instruct
+hf download meta-llama/Meta-Llama-3-8B-Instruct --local-dir text-encoders/McGill-NLP/LLM2Vec-Meta-Llama-3-8B-Instruct-mntp
 hf download McGill-NLP/LLM2Vec-Meta-Llama-3-8B-Instruct-mntp --local-dir text-encoders/McGill-NLP/LLM2Vec-Meta-Llama-3-8B-Instruct-mntp-adapter
 hf download McGill-NLP/LLM2Vec-Meta-Llama-3-8B-Instruct-mntp-supervised --local-dir text-encoders/McGill-NLP/LLM2Vec-Meta-Llama-3-8B-Instruct-mntp-supervised
 ```
 
-The raw Meta Llama folder should include files such as `model.safetensors.index.json` and its shard files. The two LLM2Vec folders are LoRA adapters and should include `adapter_model.safetensors` and `adapter_config.json`.
+The `LLM2Vec-Meta-Llama-3-8B-Instruct-mntp` local folder should include the gated raw Meta Llama files such as `model.safetensors.index.json` and shard files. The `...-mntp-adapter` and `...-mntp-supervised` folders are LoRA adapters and should include `adapter_model.safetensors` and `adapter_config.json`.
 
 The `McGill-NLP/LLM2Vec-Meta-Llama-3-8B-Instruct-mntp` page may look small in the Hugging Face file browser because it is the MNTP adapter, not the full 8B base model. The full 8B shard files come from the gated `meta-llama/Meta-Llama-3-8B-Instruct` repository.
 
@@ -152,7 +151,7 @@ Do not download a separate `McGill-NLP/LLM2Vec-Meta-Llama-3-8B-Instruct-mntp-ada
 
 Runtime loading order:
 
-1. Load raw `meta-llama/Meta-Llama-3-8B-Instruct` as the base model.
+1. Load raw `meta-llama/Meta-Llama-3-8B-Instruct` files from the local `LLM2Vec-Meta-Llama-3-8B-Instruct-mntp` folder as the base model.
 2. Merge the MNTP adapter from `TEXT_ENCODER_MNTP_ADAPTER_HOST`; by default this is the local `LLM2Vec-Meta-Llama-3-8B-Instruct-mntp-adapter` folder downloaded from `McGill-NLP/LLM2Vec-Meta-Llama-3-8B-Instruct-mntp`.
 3. Apply `McGill-NLP/LLM2Vec-Meta-Llama-3-8B-Instruct-mntp-supervised` as the final supervised adapter exposed by the `text-encoder` service.
 
@@ -171,7 +170,7 @@ ESS_UNREAL_PROJECT_ROOT=C:/Users/YourName/Documents/Unreal Projects/YourProject
 HF_HOME_HOST=C:/Users/YourName/.cache/huggingface
 HOST_USER=YourWindowsUserName
 SERVER_PORT=7860
-TEXT_ENCODER_BASE_MODEL_HOST=./text-encoders/meta-llama/Meta-Llama-3-8B-Instruct
+TEXT_ENCODER_BASE_MODEL_HOST=./text-encoders/McGill-NLP/LLM2Vec-Meta-Llama-3-8B-Instruct-mntp
 TEXT_ENCODER_MNTP_ADAPTER_HOST=./text-encoders/McGill-NLP/LLM2Vec-Meta-Llama-3-8B-Instruct-mntp-adapter
 TEXT_ENCODER_ADAPTER_HOST=./text-encoders/McGill-NLP/LLM2Vec-Meta-Llama-3-8B-Instruct-mntp-supervised
 UE_BRIDGE_HOST_PORT=18027
