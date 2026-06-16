@@ -1,0 +1,48 @@
+# Local environment
+.env
+.env.local
+.cache/
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Generated outputs
+outputs/
+runs/
+logs/
+*.log
+*.tmp
+
+# Large model/checkpoint files and local downloads
+checkpoints/**
+!checkpoints/
+!checkpoints/README.md
+text-encoders/**
+!text-encoders/
+!text-encoders/README.md
+*.safetensors
+*.pth
+*.pt
+*.ckpt
+*.bin
+*.onnx
+*.tar
+*.tar.gz
+*.zip
+*.7z
+
+# JavaScript/browser build deps that may appear inside vendored tools
+node_modules/
+**/node_modules/
+dist/
+build/
+
+# IDE/OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

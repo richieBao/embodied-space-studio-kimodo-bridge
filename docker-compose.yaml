@@ -1,0 +1,120 @@
+name: kimodo-main
+services:
+  text-encoder:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: kimodo:1.0
+    container_name: text-encoder
+    working_dir: /workspace
+    command: python -m kimodo.scripts.run_text_encoder_server
+    volumes:
+      - ./:/workspace
+      - "${HF_HOME_HOST}:/workspace/.cache/huggingface"
+      - "${TEXT_ENCODER_BASE_MODEL_HOST}:/workspace/text-encoders/McGill-NLP/LLM2Vec-Meta-Llama-3-8B-Instruct-mntp:ro"
+      - "${TEXT_ENCODER_MNTP_ADAPTER_HOST}:/workspace/text-encoders/McGill-NLP/LLM2Vec-Meta-Llama-3-8B-Instruct-mntp-adapter:ro"
+      - "${TEXT_ENCODER_ADAPTER_HOST}:/workspace/text-encoders/McGill-NLP/LLM2Vec-Meta-Llama-3-8B-Instruct-mntp-supervised:ro"
+    ports:
+      - "9550:9550"
+    environment:
+      - HF_HOME=/workspace/.cache/huggingface
+      - TEXT_ENCODERS_DIR=/workspace/text-encoders
+      - TEXT_ENCODER_MNTP_ADAPTER_PATH=/workspace/text-encoders/McGill-NLP/LLM2Vec-Meta-Llama-3-8B-Instruct-mntp-adapter
+      - HOST_USER=${HOST_USER:-user}
+      - NVIDIA_VISIBLE_DEVICES=all
+      - NVIDIA_DRIVER_CAPABILITIES=compute,utility
+    shm_size: "16gb"
+    ipc: host
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - python -c "from gradio_client import Client; import numpy as np, uuid; c=Client('http://127.0.0.1:9550/', verbose=False); ps=['A person walks forward.','A person jumps upward and lands.']; es=[]; [es.append(np.load(c.predict(p, str(uuid.uuid4())+'.npy', api_name='/DemoWrapper')[0]['value']).reshape(-1).astype(np.float32)) for p in ps]; d=float(np.mean(np.abs(es[0]-es[1]))); co=float(np.dot(es[0],es[1])/(np.linalg.norm(es[0])*np.linalg.norm(es[1]))); assert np.linalg.norm(es[0]) > 0 and np.linalg.norm(es[1]) > 0 and d >= 0.05 and co <= 0.999, (d, co)"
+      interval: 10s
+      timeout: 60s
+      retries: 12
+      start_period: 180s
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+
+  demo:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: kimodo:1.0
+    container_name: demo
+    working_dir: /workspace
+    command: python -m kimodo.demo
+    volumes:
+      - ./:/workspace
+      - "${HF_HOME_HOST}:/workspace/.cache/huggingface"
+      - ./checkpoints:/workspace/checkpoints:ro
+    ports:
+      - "${SERVER_PORT:-7860}:${SERVER_PORT:-7860}"
+    environment:
+      - TEXT_ENCODER_URL=http://text-encoder:9550/
+      - TEXT_ENCODER_MODE=api
+      - CHECKPOINT_DIR=/workspace/checkpoints
+      - SERVER_PORT=${SERVER_PORT:-7860}
+      - HF_HOME=/workspace/.cache/huggingface
+      - HOST_USER=${HOST_USER:-user}
+      - NVIDIA_VISIBLE_DEVICES=all
+      - NVIDIA_DRIVER_CAPABILITIES=compute,utility
+    shm_size: "16gb"
+    ipc: host
+    depends_on:
+      text-encoder:
+        condition: service_healthy
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+
+  ue-bridge:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: kimodo:1.0
+    container_name: ue-bridge
+    working_dir: /workspace
+    command: >
+      python /workspace-ue/Plugins/KimodoMotionAuthoring/Resources/Python/kimodo_ue_service/server.py
+      --host 0.0.0.0
+      --port 50127
+      --checkpoint-root /workspace/checkpoints
+      --text-encoders-root /workspace/text-encoders
+    volumes:
+      - ./:/workspace
+      - "${HF_HOME_HOST}:/workspace/.cache/huggingface"
+      - ./checkpoints:/workspace/checkpoints:ro
+      - ./text-encoders:/workspace/text-encoders:ro
+      - "${ESS_UNREAL_PROJECT_ROOT}:/workspace-ue:ro"
+    ports:
+      - "127.0.0.1:${UE_BRIDGE_HOST_PORT:-18027}:50127"
+    environment:
+      - HF_HOME=/workspace/.cache/huggingface
+      - TEXT_ENCODER_URL=http://text-encoder:9550/
+      - HOST_USER=${HOST_USER:-user}
+      - KIMODO_VENDOR_ROOT=/workspace
+      - KIMODO_UE_PLUGIN_ROOT=/workspace-ue/Plugins/KimodoMotionAuthoring
+      - NVIDIA_VISIBLE_DEVICES=all
+      - NVIDIA_DRIVER_CAPABILITIES=compute,utility
+    shm_size: "16gb"
+    ipc: host
+    depends_on:
+      text-encoder:
+        condition: service_healthy
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
