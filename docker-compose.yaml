@@ -12,14 +12,12 @@ services:
       - ./:/workspace
       - "${HF_HOME_HOST}:/workspace/.cache/huggingface"
       - "${TEXT_ENCODER_BASE_MODEL_HOST}:/workspace/text-encoders/McGill-NLP/LLM2Vec-Meta-Llama-3-8B-Instruct-mntp:ro"
-      - "${TEXT_ENCODER_MNTP_ADAPTER_HOST}:/workspace/text-encoders/McGill-NLP/LLM2Vec-Meta-Llama-3-8B-Instruct-mntp-adapter:ro"
       - "${TEXT_ENCODER_ADAPTER_HOST}:/workspace/text-encoders/McGill-NLP/LLM2Vec-Meta-Llama-3-8B-Instruct-mntp-supervised:ro"
     ports:
       - "9550:9550"
     environment:
       - HF_HOME=/workspace/.cache/huggingface
       - TEXT_ENCODERS_DIR=/workspace/text-encoders
-      - TEXT_ENCODER_MNTP_ADAPTER_PATH=/workspace/text-encoders/McGill-NLP/LLM2Vec-Meta-Llama-3-8B-Instruct-mntp-adapter
       - HOST_USER=${HOST_USER:-user}
       - NVIDIA_VISIBLE_DEVICES=all
       - NVIDIA_DRIVER_CAPABILITIES=compute,utility

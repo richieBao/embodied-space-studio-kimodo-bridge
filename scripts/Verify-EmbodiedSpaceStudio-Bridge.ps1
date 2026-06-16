@@ -11,7 +11,6 @@ $checks = @(
   "checkpoints/Kimodo-SOMA-RP-v1.1/model.safetensors",
   "checkpoints/Kimodo-SOMA-RP-v1.1/config.yaml",
   "text-encoders/McGill-NLP/LLM2Vec-Meta-Llama-3-8B-Instruct-mntp/model.safetensors.index.json",
-  "text-encoders/McGill-NLP/LLM2Vec-Meta-Llama-3-8B-Instruct-mntp-adapter/adapter_model.safetensors",
   "text-encoders/McGill-NLP/LLM2Vec-Meta-Llama-3-8B-Instruct-mntp-supervised/adapter_model.safetensors"
 )
 

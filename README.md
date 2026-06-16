@@ -35,7 +35,6 @@ Useful references:
 - Kimodo-SOMA-RP-v1.1 model: <https://huggingface.co/nvidia/Kimodo-SOMA-RP-v1.1>
 - NVIDIA Open Model License: <https://www.nvidia.com/en-us/agreements/enterprise-software/nvidia-open-model-license/>
 - LLM2Vec base model: <https://huggingface.co/McGill-NLP/LLM2Vec-Meta-Llama-3-8B-Instruct-mntp>
-- LLM2Vec MNTP adapter: <https://huggingface.co/McGill-NLP/LLM2Vec-Meta-Llama-3-8B-Instruct-mntp-adapter>
 - LLM2Vec supervised adapter: <https://huggingface.co/McGill-NLP/LLM2Vec-Meta-Llama-3-8B-Instruct-mntp-supervised>
 
 ## Prerequisites
@@ -70,7 +69,6 @@ embodied-space-studio-kimodo-bridge/
   text-encoders/
     McGill-NLP/
       LLM2Vec-Meta-Llama-3-8B-Instruct-mntp/
-      LLM2Vec-Meta-Llama-3-8B-Instruct-mntp-adapter/
       LLM2Vec-Meta-Llama-3-8B-Instruct-mntp-supervised/
   scripts/
     Start-EmbodiedSpaceStudio-Bridge.ps1
@@ -100,18 +98,18 @@ checkpoints/Kimodo-SOMA-RP-v1.1/config.yaml
 Download the text encoder folders from Hugging Face:
 
 - <https://huggingface.co/McGill-NLP/LLM2Vec-Meta-Llama-3-8B-Instruct-mntp>
-- <https://huggingface.co/McGill-NLP/LLM2Vec-Meta-Llama-3-8B-Instruct-mntp-adapter>
 - <https://huggingface.co/McGill-NLP/LLM2Vec-Meta-Llama-3-8B-Instruct-mntp-supervised>
 
 Place them under:
 
 ```text
 text-encoders/McGill-NLP/LLM2Vec-Meta-Llama-3-8B-Instruct-mntp/
-text-encoders/McGill-NLP/LLM2Vec-Meta-Llama-3-8B-Instruct-mntp-adapter/
 text-encoders/McGill-NLP/LLM2Vec-Meta-Llama-3-8B-Instruct-mntp-supervised/
 ```
 
-The base text encoder folder should include files such as `model.safetensors.index.json` and its shard files. The adapter folders should include `adapter_model.safetensors`.
+The base text encoder folder should include files such as `model.safetensors.index.json` and its shard files. The supervised adapter folder should include `adapter_model.safetensors`.
+
+Do not download or configure `LLM2Vec-Meta-Llama-3-8B-Instruct-mntp-adapter` for the default bridge setup. That optional pre-PEFT adapter repository is empty/not required here.
 
 ## Configure `.env`
 
@@ -130,7 +128,6 @@ HOST_USER=YourWindowsUserName
 SERVER_PORT=7860
 TEXT_ENCODER_BASE_MODEL_HOST=./text-encoders/McGill-NLP/LLM2Vec-Meta-Llama-3-8B-Instruct-mntp
 TEXT_ENCODER_ADAPTER_HOST=./text-encoders/McGill-NLP/LLM2Vec-Meta-Llama-3-8B-Instruct-mntp-supervised
-TEXT_ENCODER_MNTP_ADAPTER_HOST=./text-encoders/McGill-NLP/LLM2Vec-Meta-Llama-3-8B-Instruct-mntp-adapter
 UE_BRIDGE_HOST_PORT=18027
 ```
 
