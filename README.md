@@ -173,6 +173,7 @@ SERVER_PORT=7860
 TEXT_ENCODER_BASE_MODEL_HOST=./text-encoders/McGill-NLP/LLM2Vec-Meta-Llama-3-8B-Instruct-mntp
 TEXT_ENCODER_MNTP_ADAPTER_HOST=./text-encoders/McGill-NLP/LLM2Vec-Meta-Llama-3-8B-Instruct-mntp-adapter
 TEXT_ENCODER_ADAPTER_HOST=./text-encoders/McGill-NLP/LLM2Vec-Meta-Llama-3-8B-Instruct-mntp-supervised
+TEXT_ENCODER_DEVICE=auto
 UE_BRIDGE_HOST_PORT=18027
 ```
 
@@ -189,6 +190,22 @@ Use forward slashes in Windows paths inside `.env`, for example:
 ```text
 ESS_UNREAL_PROJECT_ROOT=C:/Users/Alice/Documents/Unreal Projects/MyProject
 ```
+
+`TEXT_ENCODER_DEVICE` is read when Docker creates the `text-encoder` container. Use one of these values:
+
+```text
+TEXT_ENCODER_DEVICE=auto
+```
+
+```text
+TEXT_ENCODER_DEVICE=cuda
+```
+
+```text
+TEXT_ENCODER_DEVICE=cpu
+```
+
+`auto` selects CUDA when available and falls back to CPU. `cuda` forces GPU. `cpu` forces CPU text encoding, which can reduce VRAM usage but is slower. Use `cuda`, not `gpu`; `gpu` is not a valid PyTorch device string in Kimodo's device selector.
 
 ## Start the bridge
 
@@ -223,6 +240,29 @@ docker compose up -d text-encoder ue-bridge
 ```
 
 Docker Desktop will show the compose project as `kimodo-main`.
+
+### Apply `.env` changes
+
+Docker environment variables are captured when a container is created. If you edit `.env`, especially `TEXT_ENCODER_DEVICE`, do not only stop/start the containers in Docker Desktop. Stop/start and restart reuse the existing container configuration, so the old value remains.
+
+Use this command after changing `.env`:
+
+```powershell
+cd C:\Path\To\embodied-space-studio-kimodo-bridge
+docker compose up -d --force-recreate --no-build text-encoder ue-bridge
+```
+
+Use `--build` only when the Docker image itself must be rebuilt, such as after editing `Dockerfile`, `docker_requirements.txt`, or Python dependencies:
+
+```powershell
+docker compose up -d --build --force-recreate text-encoder ue-bridge
+```
+
+Verify the active value inside the running container:
+
+```powershell
+docker exec text-encoder python -c "import os; print(os.environ.get('TEXT_ENCODER_DEVICE'))"
+```
 
 ## Verify the bridge
 

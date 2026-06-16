@@ -20,6 +20,7 @@ services:
       - HF_HOME=/workspace/.cache/huggingface
       - TEXT_ENCODERS_DIR=/workspace/text-encoders
       - TEXT_ENCODER_MNTP_ADAPTER_PATH=/workspace/text-encoders/McGill-NLP/LLM2Vec-Meta-Llama-3-8B-Instruct-mntp-adapter
+      - TEXT_ENCODER_DEVICE=${TEXT_ENCODER_DEVICE:-auto}
       - HOST_USER=${HOST_USER:-user}
       - NVIDIA_VISIBLE_DEVICES=all
       - NVIDIA_DRIVER_CAPABILITIES=compute,utility

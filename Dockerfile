@@ -38,7 +38,7 @@ COPY kimodo /workspace/kimodo
 COPY MotionCorrection /workspace/MotionCorrection
 
 RUN git clone --depth 1 https://github.com/nv-tlabs/kimodo-viser.git /opt/kimodo-viser \
- && sed -i 's#^-e \./kimodo-viser$#-e /opt/kimodo-viser#' /workspace/docker_requirements.txt
+ && sed -i 's#^[[:space:]]*-e[[:space:]]\+\./kimodo-viser[[:space:]]*$#-e /opt/kimodo-viser#' /workspace/docker_requirements.txt
 
 RUN --mount=type=cache,target=/root/.cache/pip \
     python -m pip install --upgrade pip \
