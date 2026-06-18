@@ -3,9 +3,12 @@ param(
 )
 
 $ErrorActionPreference = "Stop"
-$Root = Split-Path -Parent $PSScriptRoot
-$Bridge = Join-Path $Root "KimodoBridge"
+$Bridge = Split-Path -Parent $PSScriptRoot
 Set-Location $Bridge
+
+if (-not (Test-Path -LiteralPath (Join-Path $Bridge "docker-compose.yaml"))) {
+  throw "docker-compose.yaml not found. Run this script from the KimodoBridge/scripts folder."
+}
 
 if ($RemoveContainers) {
   docker compose down
