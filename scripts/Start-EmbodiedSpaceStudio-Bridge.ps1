@@ -5,11 +5,8 @@ param(
 
 $ErrorActionPreference = "Stop"
 $Root = Split-Path -Parent $PSScriptRoot
-Set-Location $Root
-
-if (!(Test-Path -LiteralPath ".env")) {
-  throw "Missing .env. Copy .env.example to .env and edit paths for your machine."
-}
+$Bridge = Join-Path $Root "KimodoBridge"
+Set-Location $Bridge
 
 $services = @("text-encoder", "ue-bridge")
 if ($WithDemo) { $services += "demo" }

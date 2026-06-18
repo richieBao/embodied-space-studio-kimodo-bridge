@@ -41,8 +41,6 @@ scenepic>=1.1.0
 pillow>=9.0
 av>=16.1.0
 
-py-soma-x @ git+https://github.com/NVlabs/SOMA-X.git
-
 # Local packages (editable installs for viser and kimodo; MotionCorrection non-editable)
 ./MotionCorrection
 -e .

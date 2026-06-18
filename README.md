@@ -1,323 +1,248 @@
-# Embodied Space Studio Kimodo Bridge
+<p align="center">
+  <img src="./assets/banner.png" alt="Banner" width="100%">
+  <a href="LICENSE"><img src="https://img.shields.io/badge/License-Apache%202.0-76B900.svg" alt="License"></a>
+  <a href="https://research.nvidia.com/labs/sil/projects/kimodo/"><img src="https://img.shields.io/badge/Project-Page-blue" alt="Project Page"></a>
+  <a href="https://research.nvidia.com/labs/sil/projects/kimodo/docs/index.html"><img src="https://img.shields.io/badge/docs-online-green.svg" alt="Documentation"></a>
+</p>
 
-This repository contains the Docker runtime used by the **Embodied Space Studio** Unreal Engine plugin to run Kimodo motion generation locally.
+## Overview
 
-The Unreal Engine plugin itself is distributed through Fab and is **not** included in this repository. Install the Fab plugin first, then use this bridge repository to run the local Kimodo services that the plugin connects to.
+Kimodo is a **ki**nematic **mo**tion **d**iffusi**o**n model trained on a large-scale (700 hours) commercially-friendly optical motion capture dataset. The model generates high-quality 3D human and robot motions, and is controlled through text prompts and an extensive set of constraints such as full-body pose keyframes, end-effector positions/rotations, 2D paths, and 2D waypoints. Full details of the model architecture and training are available in the [technical report](https://research.nvidia.com/labs/sil/projects/kimodo/assets/kimodo_tech_report.pdf).
 
-## What is included
+This repository provides:
+- **Inference**: code and CLI to generate motions on both human and robot skeletons
+- **Interactive Demo**: easily author motions with a timeline interface of text prompts and kinematic controls
+- **Annotations**: [additional text descriptions](https://huggingface.co/datasets/nvidia/SEED-Timeline-Annotations) for the [BONES-SEED](https://huggingface.co/datasets/bones-studio/seed) dataset, including fine-grained temporal descriptions
+- **Benchmark**: [test cases](https://huggingface.co/datasets/nvidia/Kimodo-Motion-Gen-Benchmark) and evaluation code built on the [BONES-SEED](https://huggingface.co/datasets/bones-studio/seed) dataset to evaluate motion generation models based on text and constraint-following abilities
 
-- Dockerfile and Docker Compose configuration for the Kimodo runtime.
-- NVIDIA Kimodo source code, licensed under Apache-2.0.
-- MotionCorrection source used by Kimodo.
-- Helper scripts for starting, stopping, and verifying the bridge.
-- Documentation for downloading model weights and configuring `.env`.
+<div align="center">
+  <img src="assets/teaser.gif" width="1280">
+</div>
 
-## What is not included
+## News
 
-This repository intentionally does **not** include:
+See the [full changelog](CHANGELOG.md) for a detailed list of all changes.
 
-- The Embodied Space Studio Unreal Engine plugin source code.
-- Fab-distributed plugin assets or Unreal project content.
-- Kimodo checkpoint weights.
-- LLM2Vec / Llama text encoder weights.
-- `.env` files with user-specific paths.
-- `.venv`, `.cache`, `node_modules`, generated outputs, or any file over GitHub's practical size limits.
+- **[2026-04-24]** _NEW_: improved multi-prompt generation and better support for small VRAM GPUs via `TEXT_ENCODER_DEVICE=cpu` env var
+- **[2026-04-10]** Released the [Kimodo Motion Generation Benchmark](#kimodo-motion-generation-benchmark) alongside new v1.1 Kimodo-SOMA models
+- **[2026-03-19]** **Breaking:** Model inputs/outputs now use the SOMA 77-joint skeleton (`somaskel77`).
+- **[2026-03-16]** Initial open-source release of Kimodo with five model variants (SOMA, G1, SMPL-X), CLI, interactive demo, and timeline annotations for BONES-SEED.
 
-## License notes
 
-The Kimodo codebase is licensed under Apache-2.0. See `LICENSE` and `ATTRIBUTIONS.MD`.
+## Kimodo Models
 
-Model checkpoints and text encoder weights are licensed separately by their publishers and must be downloaded by the user from the official model pages. Review and accept the relevant model licenses before downloading or using the weights.
+Several variations of Kimodo are available trained on various skeletons and datasets. All models support text-to-motion and kinematic controls.
 
-Useful references:
+> Note: models will be downloaded automatically when attempting to generate from the CLI or Interactive Demo, so there is no need to download them manually
 
-- Kimodo upstream repository: <https://github.com/nv-tlabs/kimodo>
-- Kimodo installation guide: <https://research.nvidia.com/labs/sil/projects/kimodo/docs/getting_started/installation.html>
-- Kimodo quick start guide: <https://research.nvidia.com/labs/sil/projects/kimodo/docs/getting_started/quick_start.html>
-- Kimodo-SOMA-RP-v1.1 model: <https://huggingface.co/nvidia/Kimodo-SOMA-RP-v1.1>
-- NVIDIA Open Model License: <https://www.nvidia.com/en-us/agreements/enterprise-software/nvidia-open-model-license/>
-- Gated Meta Llama base model: <https://huggingface.co/meta-llama/Meta-Llama-3-8B-Instruct>
-- LLM2Vec MNTP adapter: <https://huggingface.co/McGill-NLP/LLM2Vec-Meta-Llama-3-8B-Instruct-mntp>
-- LLM2Vec supervised adapter: <https://huggingface.co/McGill-NLP/LLM2Vec-Meta-Llama-3-8B-Instruct-mntp-supervised>
+| Model | Skeleton | Training Data | Release Date | Hugging Face | License |
+|:-------|:-------------|:------:|:------:|:-------------:|:-------------:|
+| **Kimodo-SOMA-RP-v1.1** | [SOMA](https://github.com/NVlabs/SOMA-X) | [Bones Rigplay 1](https://bones.studio/datasets#rp01) | April 10, 2026 | [Link](https://huggingface.co/nvidia/Kimodo-SOMA-RP-v1.1) | [NVIDIA Open Model](https://www.nvidia.com/en-us/agreements/enterprise-software/nvidia-open-model-license/) |
+| **Kimodo-SOMA-SEED-v1.1** | [SOMA](https://github.com/NVlabs/SOMA-X) | [BONES-SEED](https://huggingface.co/datasets/bones-studio/seed) | April 10, 2026  | [Link](https://huggingface.co/nvidia/Kimodo-SOMA-SEED-v1.1) | [NVIDIA Open Model](https://www.nvidia.com/en-us/agreements/enterprise-software/nvidia-open-model-license/) |
+| **Kimodo-SOMA-RP-v1** | [SOMA](https://github.com/NVlabs/SOMA-X) | [Bones Rigplay 1](https://bones.studio/datasets#rp01) | March 16, 2026 | [Link](https://huggingface.co/nvidia/Kimodo-SOMA-RP-v1) | [NVIDIA Open Model](https://www.nvidia.com/en-us/agreements/enterprise-software/nvidia-open-model-license/) |
+| **Kimodo-G1-RP-v1** | [Unitree G1](https://github.com/unitreerobotics/unitree_mujoco/tree/main/unitree_robots/g1) | [Bones Rigplay 1](https://bones.studio/datasets#rp01) | March 16, 2026  | [Link](https://huggingface.co/nvidia/Kimodo-G1-RP-v1) | [NVIDIA Open Model](https://www.nvidia.com/en-us/agreements/enterprise-software/nvidia-open-model-license/) |
+| **Kimodo-SOMA-SEED-v1** | [SOMA](https://github.com/NVlabs/SOMA-X) | [BONES-SEED](https://huggingface.co/datasets/bones-studio/seed) | March 16, 2026  | [Link](https://huggingface.co/nvidia/Kimodo-SOMA-SEED-v1) | [NVIDIA Open Model](https://www.nvidia.com/en-us/agreements/enterprise-software/nvidia-open-model-license/) |
+| **Kimodo-G1-SEED-v1** | [Unitree G1](https://github.com/unitreerobotics/unitree_mujoco/tree/main/unitree_robots/g1) | [BONES-SEED](https://huggingface.co/datasets/bones-studio/seed) | March 16, 2026  | [Link](https://huggingface.co/nvidia/Kimodo-G1-SEED-v1) | [NVIDIA Open Model](https://www.nvidia.com/en-us/agreements/enterprise-software/nvidia-open-model-license/) |
+| **Kimodo-SMPLX-RP-v1** | [SMPL-X](https://github.com/vchoutas/smplx) | [Bones Rigplay 1](https://bones.studio/datasets#rp01) | March 16, 2026  | [Link](https://huggingface.co/nvidia/Kimodo-SMPLX-RP-v1) | [NVIDIA R&D Model](https://www.nvidia.com/en-us/agreements/enterprise-software/nvidia-internal-scientific-research-and-development-model-license/) |
 
-## Prerequisites
+By default, we recommend using the models trained on the full Bones Rigplay 1 dataset (700 hours of mocap) for your motion generation needs.
+The models trained on BONES-SEED use 288 hours of [publicly available mocap data](https://huggingface.co/datasets/bones-studio/seed) so are less capable, but are useful for comparing to other models trained on BONES-SEED. To easily compare motion generation models to Kimodo, check out our [Motion Generation Benchmark](#kimodo-motion-generation-benchmark).
 
-1. Windows with Docker Desktop installed and running.
-2. WSL2 backend enabled in Docker Desktop.
-3. NVIDIA GPU driver and Docker GPU support for local GPU generation.
-4. Git installed.
-5. The Embodied Space Studio Unreal Engine plugin installed from Fab in an Unreal project.
-6. A Hugging Face account with access granted to `meta-llama/Meta-Llama-3-8B-Instruct`.
-7. A Hugging Face token available to Docker, usually from `hf auth login`.
-8. Enough disk space for model downloads. The LLM2Vec text encoder stack can require tens of GB.
+### Changes in v1.1
+The latest v1.1 Kimodo-SOMA models were released primarily for compatibility with our new [Motion Generation Benchmark](#kimodo-motion-generation-benchmark), but also contain minor quality improvements over v1. For details on these improvements, please see the Hugging Face pages for [Kimodo-SOMA-RP-v1.1](https://huggingface.co/nvidia/Kimodo-SOMA-RP-v1.1#changes-in-v11) and [Kimodo-SOMA-SEED-v1.1](https://huggingface.co/nvidia/Kimodo-SOMA-SEED-v1.1#changes-in-v11).
 
-The official Kimodo virtual-environment setup uses Python 3.10, for example:
+## Getting Started
 
-```powershell
-conda create -n kimodo python=3.10
-conda activate kimodo
+Please see the full documentation for detailed installation instructions, how to use the CLI and Interactive Demo, and other practical tips for generating motions with Kimodo:
+
+**[Full Documentation](https://research.nvidia.com/labs/sil/projects/kimodo/docs)**
+- [Quick Start Guide](https://research.nvidia.com/labs/sil/projects/kimodo/docs/getting_started/quick_start.html)
+- [Installation Instructions](https://research.nvidia.com/labs/sil/projects/kimodo/docs/getting_started/installation.html)
+- [Interactive Motion Authoring Demo](https://research.nvidia.com/labs/sil/projects/kimodo/docs/interactive_demo/index.html)
+- [Command-Line Interface](https://research.nvidia.com/labs/sil/projects/kimodo/docs/user_guide/cli.html)
+- [Benchmark Instructions](https://research.nvidia.com/labs/sil/projects/kimodo/docs/benchmark/introduction.html)
+- [API Reference](https://research.nvidia.com/labs/sil/projects/kimodo/docs/api_reference/index.html)
+
+**Before getting started** with motion generation, please review the [best practices](https://research.nvidia.com/labs/sil/projects/kimodo/docs/key_concepts/limitations.html) and be aware of [model limitations](https://research.nvidia.com/labs/sil/projects/kimodo/docs/key_concepts/limitations.html#limitations).
+
+
+Some notes on installation environment:
+- Kimodo requires ~17GB of VRAM to generate locally entirely on GPU, primarily due to the text embedding model. If you have a smaller card, set `TEXT_ENCODER_DEVICE=cpu` when running Kimodo commands to force text encoding to the CPU. This is slightly slower but reduces VRAM usage to <3 GB.
+- The model has been most extensively tested on GeForce RTX 3090, GeForce RTX 4090, and NVIDIA A100 GPUs, but should work on other recent cards with sufficient VRAM
+- This repo was developed on Linux, though Windows should work especially if using Docker
+
+## Interactive Motion Authoring Demo
+
+<div align="center">
+  <img src="assets/demo_screenshot.png" width="1000">
+</div>
+
+</br>
+
+**[Demo Documentation and Tutorial](https://research.nvidia.com/labs/sil/projects/kimodo/docs/interactive_demo/index.html)**
+
+The web-based interactive demo provides an intuitive interface for generating motions with any of the Kimodo model variations. After installation, the demo can be launched with the `kimodo_demo` command. It runs locally on http://127.0.0.1:7860. Open this URL in your browser to access the interface (or use port forwarding if set up on a server).
+
+### Demo Features
+- **Multiple Characters**: Supports generating with the SOMA, G1, and SMPL-X versions of Kimodo
+- **Text Prompts**: Enter one or more natural language descriptions of desired motions on the timeline
+- **Timeline Editor**: Add and edit keyframes and constrained intervals on multiple constraint tracks
+- **Constraint Types**:
+  - Full-Body: Complete joint position constraints at specific frames
+  - 2D Root: Define waypoints or full paths to follow on the ground plane
+  - End-Effectors: Control hands and feet positions/rotations
+- **Constraint Editing**: Editing mode allows for re-posing of constraints or adjusting waypoints
+- **3D Visualization**: Real-time rendering of generated motions with skeleton and skinned mesh options
+- **Playback Controls**: Preview generated motions with adjustable playback speed
+- **Multiple Samples**: Generate and compare multiple motion variations
+- **Examples**: Load pre-existing examples to better understand Kimodo's capabilities
+- **Export**: Save constraints and generated motions for later use
+
+## Command-Line Interface
+
+**[CLI Documentation and Examples](https://research.nvidia.com/labs/sil/projects/kimodo/docs/user_guide/cli.html)**
+
+Motions can also be generated directly from the command line with the `kimodo_gen` command or by running `python -m kimodo.scripts.generate` directly.
+
+**Key Arguments:**
+- `prompt`: A single text description or sequence of texts for the desired motion (required)
+- `--model`: Which Kimodo model to use for generation
+- `--duration`: Motion duration in seconds
+- `--num_samples`: Number of motion variations to generate
+- `--constraints`: Constraint file to control the generated motion (e.g., saved from the web demo)
+- `--diffusion_steps`: Number of denoising steps
+- `--cfg_type` / `--cfg_weight`: Classifier-free guidance (`nocfg`, `regular` with one weight, or `separated` with two weights for text vs. constraints); see the [CLI docs](https://research.nvidia.com/labs/sil/projects/kimodo/docs/user_guide/cli.html#classifier-free-guidance-cfg)
+- `--no-postprocess`: Flag to disable foot skate and constraint cleanup post-processing
+- `--seed`: Random seed for reproducible results
+
+The script supports different output formats depending on which skeleton is used. By default, a custom NPZ format is saved that is compatible with the web demo.
+For Kimodo-G1 models, the motion can be saved in the standard MuJoCo qpos CSV format.
+For Kimodo-SMPLX, motion can be saved in the standard AMASS npz format for compability with existing pipelines.
+
+### Default NPZ Output Format
+Generated motions are saved as NPZ files containing:
+- `posed_joints`: Global joint positions `[T, J, 3]`
+- `global_rot_mats`: Global joint rotation matrices `[T, J, 3, 3]`
+- `local_rot_mats`: Local (parent-relative) joint rotation matrices `[T, J, 3, 3]`
+- `foot_contacts`: Foot contact labels [left heel, left toe, right heel, right toes] `[T, 4]`
+- `smooth_root_pos`: Smoothed root representations outputted from the model `[T, 3]`
+- `root_positions`: The (non-smoothed) trajectory of the actual root joint (e.g., pelvis) `[T, 3]`
+- `global_root_heading`: The heading direction output from the model `[T, 2]`
+
+`T` the number of frames and `J` the number of joints.
+
+## Low-Level Python API
+
+**[Model API Documentation](https://research.nvidia.com/labs/sil/projects/kimodo/docs/api_reference/model.html#kimodo.model.kimodo_model.Kimodo.__call__)**
+
+For maximum flexibility, the low-level model inference API can be called directly, rather than going through our high-level CLI.
+This allows for advanced model configuration including classifier-free guidance weights and parameters related to transitions in multi-prompt sequences.
+
+## Downstream Robotics Applications of Kimodo
+
+### Visualizing G1 Motions with MuJoCo
+
+<div align="center">
+  <img src="assets/mujoco_result.gif" width="800">
+</div>
+
+After generating motions on the G1 robot skeleton and saving to the MuJoCo qpos CSV file format, they can be easily used and visualized within MuJoCo.
+A minimal visualization script is available with:
+```
+python -m kimodo.scripts.mujoco_load
+```
+Make sure to edit the script to correctly point to your CSV file and install Mujoco before running this.
+
+### Tracking Generated Motions with ProtoMotions
+
+<div align="center">
+  <img src="assets/protomotions_results.gif" width="1280">
+</div>
+
+[ProtoMotions](https://github.com/NVlabs/ProtoMotions) is a GPU-accelerated simulation and learning framework for training physically simulated digital humans and humanoid robots. The Kimodo NPZ and CSV output formats are both compatible with ProtoMotions making it easy to train physics-based policies with generated motions from Kimodo. ProtoMotions supports outputs on both the SOMA skeleton and Unitree G1
+
+After generating motions with Kimodo, head over to the [ProtoMotions docs](https://github.com/NVlabs/ProtoMotions?tab=readme-ov-file#-motion-authoring-with-kimodo) to see how to import them.
+
+### Retargeting Motions to Other Robots with GMR
+
+<div align="center">
+  <img src="assets/gmr_results.gif" width="1280">
+</div>
+
+Motions generated by Kimodo-SMPLX can be retargeted to other robots using [General Motion Retargeting (GMR)](https://github.com/YanjieZe/GMR).
+GMR supports the AMASS NPZ format out of the box, so simply generate motions with Kimodo and use `--output` to save; the AMASS NPZ is written to `stem_amass.npz` (single sample) or in the output folder (multiple samples). Then, use the [SMPL-X to Robot script](https://github.com/YanjieZe/GMR?tab=readme-ov-file#retargeting-from-smpl-x-amass-omomo-to-robot) in GMR to retarget to any supported robot. For example:
+```
+# run within GMR codebase
+python scripts/smplx_to_robot.py --smplx_file /path/to/saved/amass_format.npz --robot booster_t1
 ```
 
-This bridge normally runs Kimodo inside Docker, so users do not need to create a local Python environment unless they want to run Kimodo commands outside the containers.
+### Combining Kimodo with GEAR-SONIC
 
-Confirm Docker is available:
+<div align="center">
+  <img src="assets/sonic_kimodo_demo.gif" width="800">
+</div>
 
-```powershell
-docker --version
-docker compose version
+As a proof of concept, we have also incorporated Kimodo into the [interactive GEAR-SONIC demo](https://nvlabs.github.io/GEAR-SONIC/demo.html). In the demo, Kimodo can be used to generate a kinematic motion on the G1 robot skeleton, then GEAR-SONIC tracks the motion in simulation.
+
+## Kimodo Motion Generation Benchmark
+
+[**[Benchmark Documentation](https://research.nvidia.com/labs/sil/projects/kimodo/docs/benchmark/introduction.html)**]
+[**[Test Suite on Hugging Face](https://huggingface.co/datasets/nvidia/Kimodo-Motion-Gen-Benchmark)**]
+
+Alongside the Kimodo models, we provide a benchmark designed to standardize evaluation for motion generation models with a comprehensive set of test cases. This includes:
+
+* **Evaluation Data**: A suite of test cases [available on Hugging Face](https://huggingface.co/datasets/nvidia/Kimodo-Motion-Gen-Benchmark) is used in concert with the [BONES-SEED](https://huggingface.co/datasets/bones-studio/seed) dataset to construct the full benchmark. 
+* **Diverse Test Cases**: Test cases cover a wide range of text-conditioned and constraint-conditioned motion generation.
+* **Evaluation Pipeline**: Code for the full evaluation pipeline including benchmark construction, motion generation, and evaluation.
+* **Metrics**: Several metrics to evaluate generated motions that cover motion quality, constraint following, and text alignment. Our [TMR-SOMA-RP-v1](https://huggingface.co/nvidia/TMR-SOMA-RP-v1) model trained on all 700 hours of the Bones Rigplay dataset is a powerful embedding model to compute common metrics like R-precision and FID.
+
+To facilitate future research, we [report benchmark results](https://research.nvidia.com/labs/sil/projects/kimodo/docs/benchmark/results.html) for Kimodo-SOMA-v1.1 models, which are reproducible and easily comparable to other methods trained on the BONES-SEED data. 
+
+## Timeline Annotations for BONES-SEED
+
+As detailed in the [tech report](https://research.nvidia.com/labs/sil/projects/kimodo/assets/kimodo_tech_report.pdf), Kimodo is trained using fine-grained temporal text annotations of mocap clips.
+While the full [Rigplay 1](https://bones.studio/datasets#rp01) dataset is proprietary, we have released the temporal segmentations for the public [BONES-SEED](https://huggingface.co/datasets/bones-studio/seed) subset.
+These annotations are already included in the BONES-SEED dataset, but the standalone labels and additional information about them is [available on HuggingFace](https://huggingface.co/datasets/nvidia/SEED-Timeline-Annotations).
+
+
+## Related Humanoid Work at NVIDIA
+Kimodo is part of a larger effort to enable humanoid motion data for robotics, physical AI, and other applications.
+
+Check out these related works:
+* [SOMA Body Model](https://github.com/NVlabs/SOMA-X) - a unified parameteric human body model
+* [BONES-SEED Dataset](https://huggingface.co/datasets/bones-studio/seed) - a large scale human(oid) motion capture dataset in SOMA and G1 format
+* [ProtoMotions](https://github.com/NVlabs/ProtoMotions) - simulation and learning framework for training physically simulated human(oid)s
+* [SOMA Retargeter](https://github.com/NVIDIA/soma-retargeter) - SOMA to G1 retargeting tool
+* [GEM](https://github.com/NVlabs/GEM-X) - human motion reconstruction from video
+* [GEAR SONIC](https://github.com/NVlabs/GR00T-WholeBodyControl) - humanoid behavior foundation model for physical robots
+
+## Citation
+
+If you use this code in your research, please cite:
+
+```bibtex
+@article{Kimodo2026,
+  title={Kimodo: Scaling Controllable Human Motion Generation},
+  author={Rempe, Davis and Petrovich, Mathis and Yuan, Ye and Zhang, Haotian and Peng, Xue Bin and Jiang, Yifeng and Wang, Tingwu and Iqbal, Umar and Minor, David and de Ruyter, Michael and Li, Jiefeng and Tessler, Chen and Lim, Edy and Jeong, Eugene and Wu, Sam and Hassani, Ehsan and Huang, Michael and Yu, Jin-Bey and Chung, Chaeyeon and Song, Lina and Dionne, Olivier and Kautz, Jan and Yuen, Simon and Fidler, Sanja},
+  journal={arXiv:2603.15546},
+  year={2026}
+}
 ```
 
-## Folder layout
+## License
 
-After cloning this repository and downloading the required models, the bridge folder should look like this:
+This codebase is licensed under [Apache-2.0](LICENSE). Note that model checkpoints and data are licensed separately as indicated on the HuggingFace download pages.
 
-```text
-embodied-space-studio-kimodo-bridge/
-  docker-compose.yaml
-  Dockerfile
-  .env
-  checkpoints/
-    Kimodo-SOMA-RP-v1.1/
-      config.yaml
-      model.safetensors
-  text-encoders/
-    McGill-NLP/
-      LLM2Vec-Meta-Llama-3-8B-Instruct-mntp/
-      LLM2Vec-Meta-Llama-3-8B-Instruct-mntp-adapter/
-      LLM2Vec-Meta-Llama-3-8B-Instruct-mntp-supervised/
-  scripts/
-    Start-EmbodiedSpaceStudio-Bridge.ps1
-    Stop-EmbodiedSpaceStudio-Bridge.ps1
-    Verify-EmbodiedSpaceStudio-Bridge.ps1
-```
+This project will download and install additional third-party open source software projects. Review the license terms of these open source projects before use.
 
-## Download model weights
+## Acknowledgments
 
-Download the Kimodo checkpoint:
+This project builds upon excellent open-source projects:
+- [Viser](https://github.com/nerfstudio-project/viser) for 3D motion authoring demo
+- [LLM2Vec](https://github.com/McGill-NLP/llm2vec) for text encoding
 
-- <https://huggingface.co/nvidia/Kimodo-SOMA-RP-v1.1>
+## Contact
 
-Place the downloaded files under:
+For questions or issues, please open an issue on this repository or reach out directly to the authors.
 
-```text
-checkpoints/Kimodo-SOMA-RP-v1.1/
-```
-
-At minimum, the bridge expects:
-
-```text
-checkpoints/Kimodo-SOMA-RP-v1.1/model.safetensors
-checkpoints/Kimodo-SOMA-RP-v1.1/config.yaml
-```
-
-Before downloading the text encoder, request access to the gated Meta Llama model page and wait until Hugging Face shows that your account has been granted access:
-
-- <https://huggingface.co/meta-llama/Meta-Llama-3-8B-Instruct>
-
-Then authenticate on the host machine:
-
-```powershell
-pip install --upgrade huggingface_hub
-hf auth login
-```
-
-The Kimodo LLM2Vec text encoder uses three pieces:
-
-- Raw gated base model source: <https://huggingface.co/meta-llama/Meta-Llama-3-8B-Instruct>
-- MNTP LoRA adapter source: <https://huggingface.co/McGill-NLP/LLM2Vec-Meta-Llama-3-8B-Instruct-mntp>
-- Supervised LoRA adapter: <https://huggingface.co/McGill-NLP/LLM2Vec-Meta-Llama-3-8B-Instruct-mntp-supervised>
-
-Place them under:
-
-```text
-text-encoders/McGill-NLP/LLM2Vec-Meta-Llama-3-8B-Instruct-mntp/
-text-encoders/McGill-NLP/LLM2Vec-Meta-Llama-3-8B-Instruct-mntp-adapter/
-text-encoders/McGill-NLP/LLM2Vec-Meta-Llama-3-8B-Instruct-mntp-supervised/
-```
-
-Example manual download commands:
-
-```powershell
-hf download meta-llama/Meta-Llama-3-8B-Instruct --local-dir text-encoders/McGill-NLP/LLM2Vec-Meta-Llama-3-8B-Instruct-mntp
-hf download McGill-NLP/LLM2Vec-Meta-Llama-3-8B-Instruct-mntp --local-dir text-encoders/McGill-NLP/LLM2Vec-Meta-Llama-3-8B-Instruct-mntp-adapter
-hf download McGill-NLP/LLM2Vec-Meta-Llama-3-8B-Instruct-mntp-supervised --local-dir text-encoders/McGill-NLP/LLM2Vec-Meta-Llama-3-8B-Instruct-mntp-supervised
-```
-
-The `LLM2Vec-Meta-Llama-3-8B-Instruct-mntp` local folder should include the gated raw Meta Llama files such as `model.safetensors.index.json` and shard files. The `...-mntp-adapter` and `...-mntp-supervised` folders are LoRA adapters and should include `adapter_model.safetensors` and `adapter_config.json`.
-
-The `McGill-NLP/LLM2Vec-Meta-Llama-3-8B-Instruct-mntp` page may look small in the Hugging Face file browser because it is the MNTP adapter, not the full 8B base model. The full 8B shard files come from the gated `meta-llama/Meta-Llama-3-8B-Instruct` repository.
-
-Do not download a separate `McGill-NLP/LLM2Vec-Meta-Llama-3-8B-Instruct-mntp-adapter` repository. The recommended local folder is named `LLM2Vec-Meta-Llama-3-8B-Instruct-mntp-adapter` only to make its runtime role clear. Its source is `McGill-NLP/LLM2Vec-Meta-Llama-3-8B-Instruct-mntp`.
-
-Runtime loading order:
-
-1. Load raw `meta-llama/Meta-Llama-3-8B-Instruct` files from the local `LLM2Vec-Meta-Llama-3-8B-Instruct-mntp` folder as the base model.
-2. Merge the MNTP adapter from `TEXT_ENCODER_MNTP_ADAPTER_HOST`; by default this is the local `LLM2Vec-Meta-Llama-3-8B-Instruct-mntp-adapter` folder downloaded from `McGill-NLP/LLM2Vec-Meta-Llama-3-8B-Instruct-mntp`.
-3. Apply `McGill-NLP/LLM2Vec-Meta-Llama-3-8B-Instruct-mntp-supervised` as the final supervised adapter exposed by the `text-encoder` service.
-
-## Configure `.env`
-
-Copy `.env.example` to `.env`:
-
-```powershell
-Copy-Item .env.example .env
-```
-
-Edit `.env` for your machine:
-
-```text
-ESS_UNREAL_PROJECT_ROOT=C:/Users/YourName/Documents/Unreal Projects/YourProject
-HF_HOME_HOST=C:/Users/YourName/.cache/huggingface
-HOST_USER=YourWindowsUserName
-SERVER_PORT=7860
-TEXT_ENCODER_BASE_MODEL_HOST=./text-encoders/McGill-NLP/LLM2Vec-Meta-Llama-3-8B-Instruct-mntp
-TEXT_ENCODER_MNTP_ADAPTER_HOST=./text-encoders/McGill-NLP/LLM2Vec-Meta-Llama-3-8B-Instruct-mntp-adapter
-TEXT_ENCODER_ADAPTER_HOST=./text-encoders/McGill-NLP/LLM2Vec-Meta-Llama-3-8B-Instruct-mntp-supervised
-TEXT_ENCODER_DEVICE=auto
-UE_BRIDGE_HOST_PORT=18027
-```
-
-`HF_HOME_HOST` should point to the Hugging Face cache that contains the token created by `hf auth login`. If you prefer to keep the cache inside the bridge folder, place the token under `<BridgeRoot>/.cache/huggingface/token` and use `HF_HOME_HOST=./.cache/huggingface`.
-
-`ESS_UNREAL_PROJECT_ROOT` must point to the Unreal project that has the Fab plugin installed. The bridge runs this file from the Fab plugin:
-
-```text
-Plugins/KimodoMotionAuthoring/Resources/Python/kimodo_ue_service/server.py
-```
-
-Use forward slashes in Windows paths inside `.env`, for example:
-
-```text
-ESS_UNREAL_PROJECT_ROOT=C:/Users/Alice/Documents/Unreal Projects/MyProject
-```
-
-`TEXT_ENCODER_DEVICE` is read when Docker creates the `text-encoder` container. Use one of these values:
-
-```text
-TEXT_ENCODER_DEVICE=auto
-```
-
-```text
-TEXT_ENCODER_DEVICE=cuda
-```
-
-```text
-TEXT_ENCODER_DEVICE=cpu
-```
-
-`auto` selects CUDA when available and falls back to CPU. `cuda` forces GPU. `cpu` forces CPU text encoding, which can reduce VRAM usage but is slower. Use `cuda`, not `gpu`; `gpu` is not a valid PyTorch device string in Kimodo's device selector.
-
-## Start the bridge
-
-From PowerShell:
-
-```powershell
-cd C:\Path\To\embodied-space-studio-kimodo-bridge
-.\scripts\Start-EmbodiedSpaceStudio-Bridge.ps1
-```
-
-This starts the required services:
-
-- `text-encoder`
-- `ue-bridge`
-
-To rebuild the Docker image before starting:
-
-```powershell
-.\scripts\Start-EmbodiedSpaceStudio-Bridge.ps1 -Build
-```
-
-To also start the optional Kimodo demo:
-
-```powershell
-.\scripts\Start-EmbodiedSpaceStudio-Bridge.ps1 -WithDemo
-```
-
-The equivalent compose command is:
-
-```powershell
-docker compose up -d text-encoder ue-bridge
-```
-
-Docker Desktop will show the compose project as `kimodo-main`.
-
-### Apply `.env` changes
-
-Docker environment variables are captured when a container is created. If you edit `.env`, especially `TEXT_ENCODER_DEVICE`, do not only stop/start the containers in Docker Desktop. Stop/start and restart reuse the existing container configuration, so the old value remains.
-
-Use this command after changing `.env`:
-
-```powershell
-cd C:\Path\To\embodied-space-studio-kimodo-bridge
-docker compose up -d --force-recreate --no-build text-encoder ue-bridge
-```
-
-Use `--build` only when the Docker image itself must be rebuilt, such as after editing `Dockerfile`, `docker_requirements.txt`, or Python dependencies:
-
-```powershell
-docker compose up -d --build --force-recreate text-encoder ue-bridge
-```
-
-Verify the active value inside the running container:
-
-```powershell
-docker exec text-encoder python -c "import os; print(os.environ.get('TEXT_ENCODER_DEVICE'))"
-```
-
-## Verify the bridge
-
-Run:
-
-```powershell
-.\scripts\Verify-EmbodiedSpaceStudio-Bridge.ps1
-```
-
-Expected local endpoints:
-
-```text
-http://127.0.0.1:18027/bridge/v1/health
-http://127.0.0.1:18027/bridge/v1/models
-```
-
-The expected model key is:
-
-```text
-kimodo-soma-rp-v1.1
-```
-
-## Stop the bridge
-
-Stop containers but keep them available for faster restart:
-
-```powershell
-.\scripts\Stop-EmbodiedSpaceStudio-Bridge.ps1
-```
-
-Remove compose containers:
-
-```powershell
-.\scripts\Stop-EmbodiedSpaceStudio-Bridge.ps1 -RemoveContainers
-```
-
-## Use from Unreal Engine
-
-1. Start Docker Desktop.
-2. Start this bridge runtime.
-3. Open the Unreal project with the Embodied Space Studio Fab plugin installed.
-4. Open the plugin panel.
-5. In the Generate tab, check bridge health or click **Connect Docker Bridge**.
-6. Refresh models and load `kimodo-soma-rp-v1.1`.
-
-If Unreal cannot connect, first open:
-
-```text
-http://127.0.0.1:18027/bridge/v1/health
-```
-
-Then check container status:
-
-```powershell
-docker ps --filter "name=text-encoder"
-docker ps --filter "name=ue-bridge"
-docker compose logs -f ue-bridge
-```
+---

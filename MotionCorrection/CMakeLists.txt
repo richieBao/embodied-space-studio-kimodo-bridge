@@ -3,6 +3,7 @@ project(motion_correction)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
+option(MOTION_CORRECTION_FETCH_DEPS "Allow CMake to fetch pybind11/Eigen if system packages are missing" OFF)
 
 # Find Python
 find_package(Python3 COMPONENTS Interpreter Development REQUIRED)
@@ -10,30 +11,38 @@ find_package(Python3 COMPONENTS Interpreter Development REQUIRED)
 # Find or fetch pybind11
 find_package(pybind11 CONFIG QUIET)
 if(NOT pybind11_FOUND)
-    message(STATUS "pybind11 not found, fetching from GitHub...")
-    include(FetchContent)
-    FetchContent_Declare(
-        pybind11
-        GIT_REPOSITORY https://github.com/pybind/pybind11.git
-        GIT_TAG v2.11.1
-    )
-    FetchContent_MakeAvailable(pybind11)
+    if(MOTION_CORRECTION_FETCH_DEPS)
+        message(STATUS "pybind11 not found, fetching from GitHub...")
+        include(FetchContent)
+        FetchContent_Declare(
+            pybind11
+            GIT_REPOSITORY https://github.com/pybind/pybind11.git
+            GIT_TAG v2.11.1
+        )
+        FetchContent_MakeAvailable(pybind11)
+    else()
+        message(FATAL_ERROR "pybind11 not found. Install pybind11-dev, or configure with -DMOTION_CORRECTION_FETCH_DEPS=ON.")
+    endif()
 endif()
 
 # Find or fetch Eigen
 find_package(Eigen3 3.3 CONFIG QUIET)
 if(NOT Eigen3_FOUND)
-    message(STATUS "Eigen3 not found, fetching from GitLab...")
-    include(FetchContent)
-    FetchContent_Declare(
-        Eigen
-        GIT_REPOSITORY https://gitlab.com/libeigen/eigen.git
-        GIT_TAG 3.4.0
-    )
-    set(EIGEN_BUILD_DOC OFF CACHE BOOL "" FORCE)
-    set(BUILD_TESTING OFF CACHE BOOL "" FORCE)
-    set(EIGEN_BUILD_PKGCONFIG OFF CACHE BOOL "" FORCE)
-    FetchContent_MakeAvailable(Eigen)
+    if(MOTION_CORRECTION_FETCH_DEPS)
+        message(STATUS "Eigen3 not found, fetching from GitLab...")
+        include(FetchContent)
+        FetchContent_Declare(
+            Eigen
+            GIT_REPOSITORY https://gitlab.com/libeigen/eigen.git
+            GIT_TAG 3.4.0
+        )
+        set(EIGEN_BUILD_DOC OFF CACHE BOOL "" FORCE)
+        set(BUILD_TESTING OFF CACHE BOOL "" FORCE)
+        set(EIGEN_BUILD_PKGCONFIG OFF CACHE BOOL "" FORCE)
+        FetchContent_MakeAvailable(Eigen)
+    else()
+        message(FATAL_ERROR "Eigen3 not found. Install libeigen3-dev, or configure with -DMOTION_CORRECTION_FETCH_DEPS=ON.")
+    endif()
 endif()
 
 # Source files

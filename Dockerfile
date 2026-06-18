@@ -12,8 +12,8 @@ WORKDIR /workspace
 
 # System deps
 RUN apt-get update && apt-get install -y --no-install-recommends \
-      git curl ca-certificates \
-      cmake build-essential \
+      curl ca-certificates \
+      cmake build-essential pybind11-dev libeigen3-dev \
       gosu \
     && rm -rf /var/lib/apt/lists/*
 
@@ -36,9 +36,7 @@ COPY setup.py /workspace/setup.py
 COPY pyproject.toml /workspace/pyproject.toml
 COPY kimodo /workspace/kimodo
 COPY MotionCorrection /workspace/MotionCorrection
-
-RUN git clone --depth 1 https://github.com/nv-tlabs/kimodo-viser.git /opt/kimodo-viser \
- && sed -i 's#^[[:space:]]*-e[[:space:]]\+\./kimodo-viser[[:space:]]*$#-e /opt/kimodo-viser#' /workspace/docker_requirements.txt
+COPY kimodo-viser /workspace/kimodo-viser
 
 RUN --mount=type=cache,target=/root/.cache/pip \
     python -m pip install --upgrade pip \

@@ -1,16 +1,5 @@
 # Checkpoints
 
-Model weights are not stored in this Git repository.
+Place downloaded Kimodo checkpoint folders here.
 
-Download Kimodo-SOMA-RP-v1.1 from:
-
-https://huggingface.co/nvidia/Kimodo-SOMA-RP-v1.1
-
-Place the files here:
-
-```text
-checkpoints/Kimodo-SOMA-RP-v1.1/model.safetensors
-checkpoints/Kimodo-SOMA-RP-v1.1/config.yaml
-```
-
-Review and accept the model license on Hugging Face before downloading.
+This repository intentionally does not track checkpoint weights or model files. The Docker services mount this directory at `/workspace/checkpoints`.

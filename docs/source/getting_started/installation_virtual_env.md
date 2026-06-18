@@ -22,11 +22,10 @@ conda activate kimodo
 ### Install PyTorch
 First, make sure to install a version of [PyTorch](https://pytorch.org/get-started/locally/) that works with your system and CUDA version. We suggest anything over PyTorch 2.0. We strongly suggest using a GPU-capable version of PyTorch to generate motions in a reasonable amount of time.
 
-### (Optional) Clone Modified Viser Library
-The interactive demo relies on [a fork of Viser](https://github.com/nv-tlabs/kimodo-viser) that implements a timeline interface and more. If you want to have an editable install of this version of Viser (i.e., you expect to modify it), clone and install it within the `kimodo` directory using:
+### Install Bundled Modified Viser Library
+The interactive demo relies on the modified Viser library included in this release repo under `./kimodo-viser`. Install it from the local copy:
 ```bash
-git clone https://github.com/nv-tlabs/kimodo-viser.git
-pip install -e kimodo-viser
+pip install -e ./kimodo-viser
 ```
 
 ### Install Kimodo
@@ -38,8 +37,9 @@ This results in a single editable install for Kimodo and the MotionCorrection pa
 
 If you plan to use the demo, you can instead run:
 ```bash
-pip install -e ".[all]"
+pip install -e ./kimodo-viser
+pip install -e ".[soma]"
 ```
-This will install our [Viser fork](https://github.com/nv-tlabs/kimodo-viser) (if not already installed in the previous step) and the [SOMA body model](https://github.com/NVlabs/SOMA-X).
+This will install the bundled Viser fork and the [SOMA body model](https://github.com/NVlabs/SOMA-X).
 
 Next, head over to the [Quick Start](quick_start.md) page to test out your installation by generating some motions.

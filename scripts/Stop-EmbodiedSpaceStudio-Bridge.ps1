@@ -4,7 +4,8 @@ param(
 
 $ErrorActionPreference = "Stop"
 $Root = Split-Path -Parent $PSScriptRoot
-Set-Location $Root
+$Bridge = Join-Path $Root "KimodoBridge"
+Set-Location $Bridge
 
 if ($RemoveContainers) {
   docker compose down

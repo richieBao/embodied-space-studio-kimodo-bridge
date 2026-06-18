@@ -33,14 +33,13 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-demo = [
-  "viser @ git+https://github.com/nv-tlabs/kimodo-viser.git",
-]
+# The release repo vendors the modified Viser fork in ./kimodo-viser.
+# Install it with `pip install -e ./kimodo-viser` instead of pulling from GitHub.
+demo = []
 soma = [
   "py-soma-x @ git+https://github.com/NVlabs/SOMA-X.git"
 ]
 all = [
-  "viser @ git+https://github.com/nv-tlabs/kimodo-viser.git",
   "py-soma-x @ git+https://github.com/NVlabs/SOMA-X.git"
 ]
 

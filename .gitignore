@@ -1,48 +1,175 @@
-# Local environment
-.env
-.env.local
-.cache/
-.venv/
-venv/
+# debugging files
+debug/
+SMPLX_NEUTRAL.npz
+
+# Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
-.pytest_cache/
-.mypy_cache/
-.ruff_cache/
+*$py.class
 
-# Generated outputs
-outputs/
-runs/
-logs/
-*.log
-*.tmp
+# C extensions
+*.so
 
-# Large model/checkpoint files and local downloads
-checkpoints/**
-!checkpoints/
-!checkpoints/README.md
-text-encoders/**
-!text-encoders/
-!text-encoders/README.md
-*.safetensors
-*.pth
-*.pt
-*.ckpt
-*.bin
-*.onnx
-*.tar
-*.tar.gz
-*.zip
-*.7z
+datasets
 
-# JavaScript/browser build deps that may appear inside vendored tools
-node_modules/
-**/node_modules/
-dist/
+# Distribution / packaging
+.Python
 build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+parts/
+sdist/
+var/
+wheels/
+pip-wheel-metadata/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
 
-# IDE/OS
-.vscode/
-.idea/
-.DS_Store
-Thumbs.db
+# PyInstaller
+#  Usually these files are written by a python script from a template
+#  before PyInstaller builds the exe, so as to inject date/other infos into it.
+*.manifest
+*.spec
+
+# Installer logs
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Unit test / coverage reports
+htmlcov/
+.tox/
+.nox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
+.pytest_cache/
+
+# Translations
+*.mo
+*.pot
+
+# Django stuff:
+*.log
+local_settings.py
+db.sqlite3
+db.sqlite3-journal
+
+# Flask stuff:
+instance/
+.webassets-cache
+
+# Scrapy stuff:
+.scrapy
+
+# Sphinx documentation
+docs/_build/
+
+# PyBuilder
+target/
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# IPython
+profile_default/
+ipython_config.py
+
+# pyenv
+.python-version
+
+# pipenv
+#   According to pypa/pipenv#598, it is recommended to include Pipfile.lock in version control.
+#   However, in case of collaboration, if having platform-specific dependencies or dependencies
+#   having no cross-platform support, pipenv may install dependencies that don't work, or not
+#   install all needed dependencies.
+#Pipfile.lock
+
+# PEP 582; used by e.g. github.com/David-OConnor/pyflow
+__pypackages__/
+
+# Celery stuff
+celerybeat-schedule
+celerybeat.pid
+
+# SageMath parsed files
+*.sage.py
+
+# Environments
+.env
+.env.*
+!.env.example
+.venv
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# Spyder project settings
+.spyderproject
+.spyproject
+
+# Rope project settings
+.ropeproject
+
+# mkdocs documentation
+/site
+
+# mypy
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# Pyre type checker
+.pyre/
+
+# vscode
+.vscode
+*.code-workspace
+/pyrightconfig.json
+wandb/
+
+# others
+out
+tmr_out
+.ruff_cache
+outputs
+/debug
+/batch*.sh
+checkpoints/
+checkpoints/**/test/*
+text-encoders/
+nohup.out
+
+*.swp
+*.swo
+*.txt~*
+*.un~
+*~
+train_done
+.aider*
+onelogger.err
+
+# deploy files
+/helm-library
+
+# Local machine/path artifact that should never be published or sent as Docker context.
+/C/
+
+# Frontend dependency installs are reproducible from package-lock.json.
+**/node_modules/
+**/.nodeenv/
+
+# Keep the prebuilt Viser client in this release repo so Docker/runtime does not need npm.
+!kimodo-viser/src/viser/client/build/
+!kimodo-viser/src/viser/client/build/**

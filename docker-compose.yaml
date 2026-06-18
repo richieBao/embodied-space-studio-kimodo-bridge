@@ -14,18 +14,27 @@ services:
       - "${TEXT_ENCODER_BASE_MODEL_HOST}:/workspace/text-encoders/McGill-NLP/LLM2Vec-Meta-Llama-3-8B-Instruct-mntp:ro"
       - "${TEXT_ENCODER_MNTP_ADAPTER_HOST}:/workspace/text-encoders/McGill-NLP/LLM2Vec-Meta-Llama-3-8B-Instruct-mntp-adapter:ro"
       - "${TEXT_ENCODER_ADAPTER_HOST}:/workspace/text-encoders/McGill-NLP/LLM2Vec-Meta-Llama-3-8B-Instruct-mntp-supervised:ro"
+    # expose to your host browser
     ports:
       - "9550:9550"
     environment:
+      # Make Gradio reachable from other containers
+      # - GRADIO_SERVER_NAME=0.0.0.0
+      # - GRADIO_SERVER_PORT=9550
       - HF_HOME=/workspace/.cache/huggingface
       - TEXT_ENCODERS_DIR=/workspace/text-encoders
       - TEXT_ENCODER_MNTP_ADAPTER_PATH=/workspace/text-encoders/McGill-NLP/LLM2Vec-Meta-Llama-3-8B-Instruct-mntp-adapter
       - TEXT_ENCODER_DEVICE=${TEXT_ENCODER_DEVICE:-auto}
+      # Host user mapping (for non-root ownership + proper shell prompt)
       - HOST_USER=${HOST_USER:-user}
+
+      # GPU
       - NVIDIA_VISIBLE_DEVICES=all
       - NVIDIA_DRIVER_CAPABILITIES=compute,utility
+
     shm_size: "16gb"
     ipc: host
+
     healthcheck:
       test:
         - CMD-SHELL
@@ -34,6 +43,7 @@ services:
       timeout: 60s
       retries: 12
       start_period: 180s
+
     deploy:
       resources:
         reservations:
@@ -57,19 +67,27 @@ services:
     ports:
       - "${SERVER_PORT:-7860}:${SERVER_PORT:-7860}"
     environment:
+      # Point the model at the text-encoder service.
       - TEXT_ENCODER_URL=http://text-encoder:9550/
       - TEXT_ENCODER_MODE=api
+      # Make checkpoint paths robust (Hydra config reads this).
       - CHECKPOINT_DIR=/workspace/checkpoints
       - SERVER_PORT=${SERVER_PORT:-7860}
       - HF_HOME=/workspace/.cache/huggingface
+      # Host user mapping (for non-root ownership + proper shell prompt)
       - HOST_USER=${HOST_USER:-user}
+
+      # GPU
       - NVIDIA_VISIBLE_DEVICES=all
       - NVIDIA_DRIVER_CAPABILITIES=compute,utility
+
     shm_size: "16gb"
     ipc: host
+
     depends_on:
       text-encoder:
         condition: service_healthy
+
     deploy:
       resources:
         reservations:
@@ -96,7 +114,7 @@ services:
       - "${HF_HOME_HOST}:/workspace/.cache/huggingface"
       - ./checkpoints:/workspace/checkpoints:ro
       - ./text-encoders:/workspace/text-encoders:ro
-      - "${ESS_UNREAL_PROJECT_ROOT}:/workspace-ue:ro"
+      - "../UnrealProject:/workspace-ue"
     ports:
       - "127.0.0.1:${UE_BRIDGE_HOST_PORT:-18027}:50127"
     environment:
@@ -105,13 +123,18 @@ services:
       - HOST_USER=${HOST_USER:-user}
       - KIMODO_VENDOR_ROOT=/workspace
       - KIMODO_UE_PLUGIN_ROOT=/workspace-ue/Plugins/KimodoMotionAuthoring
+
+      # GPU
       - NVIDIA_VISIBLE_DEVICES=all
       - NVIDIA_DRIVER_CAPABILITIES=compute,utility
+
     shm_size: "16gb"
     ipc: host
+
     depends_on:
       text-encoder:
         condition: service_healthy
+
     deploy:
       resources:
         reservations:
@@ -119,3 +142,7 @@ services:
             - driver: nvidia
               count: all
               capabilities: [gpu]
+
+
+
+
