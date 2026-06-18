@@ -1,20 +1,13 @@
 $ErrorActionPreference = "Continue"
 $Bridge = Split-Path -Parent $PSScriptRoot
-$WorkspaceRoot = Split-Path -Parent $Bridge
 $BridgeName = Split-Path -Leaf $Bridge
-
-$checks = @(
-  "UnrealProject/EmbodiedSpaceStudio.uproject",
-  "UnrealProject/Plugins/KimodoMotionAuthoring/EmbodiedSpaceStudio.uplugin",
-  "UnrealProject/Plugins/KimodoMotionAuthoring/Source",
-  "UnrealProject/Plugins/KimodoMotionAuthoring/Config",
-  "UnrealProject/Plugins/KimodoMotionAuthoring/Content",
-  "UnrealProject/Plugins/KimodoMotionAuthoring/Resources/Python/kimodo_ue_service/server.py"
-)
 
 $bridgeChecks = @(
   "docker-compose.yaml",
+  "Dockerfile",
   ".env",
+  "ue_bridge_service/kimodo_ue_service/server.py",
+  "kimodo-viser/src/viser/client/build",
   "checkpoints/Kimodo-SOMA-RP-v1.1/model.safetensors",
   "checkpoints/Kimodo-SOMA-RP-v1.1/config.yaml",
   "text-encoders/McGill-NLP/LLM2Vec-Meta-Llama-3-8B-Instruct-mntp/model.safetensors.index.json",
@@ -23,16 +16,6 @@ $bridgeChecks = @(
 )
 
 $missing = @()
-foreach ($rel in $checks) {
-  $path = Join-Path $WorkspaceRoot $rel
-  if (Test-Path -LiteralPath $path) {
-    Write-Host "OK      $rel"
-  } else {
-    Write-Host "MISSING $rel"
-    $missing += $rel
-  }
-}
-
 foreach ($rel in $bridgeChecks) {
   $path = Join-Path $Bridge $rel
   $label = "$BridgeName/$rel"
@@ -42,6 +25,13 @@ foreach ($rel in $bridgeChecks) {
     Write-Host "MISSING $label"
     $missing += $label
   }
+}
+
+$outputRoot = Join-Path $Bridge "outputs"
+if (Test-Path -LiteralPath $outputRoot) {
+  Write-Host "OK      $BridgeName/outputs"
+} else {
+  Write-Host "INFO    $BridgeName/outputs will be created by the start script or Docker Compose."
 }
 
 try {

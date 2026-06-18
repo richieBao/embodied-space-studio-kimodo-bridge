@@ -37,6 +37,7 @@ COPY pyproject.toml /workspace/pyproject.toml
 COPY kimodo /workspace/kimodo
 COPY MotionCorrection /workspace/MotionCorrection
 COPY kimodo-viser /workspace/kimodo-viser
+COPY ue_bridge_service /workspace/ue_bridge_service
 
 RUN --mount=type=cache,target=/root/.cache/pip \
     python -m pip install --upgrade pip \

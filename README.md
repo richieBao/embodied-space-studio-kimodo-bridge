@@ -1,34 +1,13 @@
 # EmbodiedSpaceStudio Kimodo Bridge
 
-This repository is the user-side Docker bridge for running Kimodo motion generation with the
-EmbodiedSpaceStudio Unreal Engine plugin. It is not a standalone mirror of the upstream Kimodo
-README. The expected use case is:
+This repository is the user-side Docker bridge for running Kimodo motion generation with the EmbodiedSpaceStudio Unreal Engine plugin. It is packaged for local Docker installation and is not a direct copy of the upstream Kimodo README.
 
-- Unreal Engine runs the `EmbodiedSpaceStudio` project and the `KimodoMotionAuthoring` plugin.
-- Docker runs the Kimodo Python services, text encoder service, and UE bridge service.
-- The UE plugin talks to the local bridge at `127.0.0.1:18027`.
+The intended boundary is simple:
 
-## Expected Folder Layout
-
-Place this repository next to the Unreal project folder:
-
-```text
-EmbodiedSpaceStudio/
-  UnrealProject/
-    EmbodiedSpaceStudio.uproject
-    Plugins/
-      KimodoMotionAuthoring/
-  KimodoBridge/
-    docker-compose.yaml
-    Dockerfile
-    kimodo/
-    kimodo-viser/
-    scripts/
-```
-
-The folder name can differ, but `docker-compose.yaml` mounts `../UnrealProject` into the
-container. If your Unreal project is elsewhere, edit the `ue-bridge` volume in
-`docker-compose.yaml`.
+- Docker runs Kimodo, the text encoder, the optional browser demo, and the EmbodiedSpaceStudio bridge API.
+- Unreal Engine runs any project that has the EmbodiedSpaceStudio / KimodoMotionAuthoring plugin installed.
+- The UE plugin connects to the local bridge endpoint, usually `http://127.0.0.1:18027/bridge/v1`.
+- This repository can be placed in any user-chosen folder. It does not need to live inside or beside a UE project.
 
 ## What Is Included
 
@@ -36,6 +15,7 @@ Included in this repo:
 
 - Kimodo Python source used by the Docker image.
 - The local `kimodo-viser` fork required by the interactive demo and Kimodo UI.
+- The EmbodiedSpaceStudio bridge API service used by the Docker `ue-bridge` container.
 - Docker files for `text-encoder`, `demo`, and `ue-bridge`.
 - Small placeholder README files for model directories.
 - PowerShell helper scripts under `scripts/`.
@@ -44,42 +24,23 @@ Intentionally not included:
 
 - Kimodo checkpoint weights under `checkpoints/`.
 - LLM2Vec/text encoder model weights under `text-encoders/`.
-- Hugging Face cache files, virtual environments, Docker caches, and `node_modules`.
+- Hugging Face cache files, local outputs, virtual environments, Docker caches, and `node_modules`.
 
-## First-Time Setup
+## Install
 
-### 1. Requirements
+### A. Download This Repository
 
-- Windows with Docker Desktop.
-- NVIDIA GPU support for Docker if running generation on GPU.
-- The EmbodiedSpaceStudio Unreal project and `KimodoMotionAuthoring` plugin installed beside this
-  folder.
-- Downloaded Kimodo checkpoint and text encoder model files.
+Download `embodied-space-studio-kimodo-bridge` from GitHub and unzip it to any local folder, for example:
 
-### 2. Create `.env`
-
-From this folder:
-
-```powershell
-Copy-Item .env.example .env
-notepad .env
+```text
+D:/EmbodiedSpaceStudio/KimodoBridge
 ```
 
-Adjust the host paths if you changed the folder layout. Relative paths such as
-`./checkpoints/...` are recommended when the models live inside this repository.
+Open a terminal in that folder before running the commands below.
 
-Important variables:
+### B. Download Model Files
 
-- `HF_HOME_HOST`: host Hugging Face cache directory.
-- `TEXT_ENCODER_BASE_MODEL_HOST`: base LLM2Vec model directory.
-- `TEXT_ENCODER_MNTP_ADAPTER_HOST`: MNTP adapter directory.
-- `TEXT_ENCODER_ADAPTER_HOST`: supervised adapter directory.
-- `UE_BRIDGE_HOST_PORT`: local host port used by Unreal, default `18027`.
-- `TEXT_ENCODER_DEVICE`: use `auto`, `cuda`, or `cpu`.
-
-### 3. Put Model Files In Place
-
-Expected checkpoint layout:
+Put the Kimodo checkpoint under:
 
 ```text
 checkpoints/
@@ -89,7 +50,7 @@ checkpoints/
     stats/
 ```
 
-Expected text encoder layout:
+Put the text encoder folders under:
 
 ```text
 text-encoders/
@@ -99,11 +60,40 @@ text-encoders/
     LLM2Vec-Meta-Llama-3-8B-Instruct-mntp-supervised/
 ```
 
-The verification script checks for the key files used by the Docker services.
+The large model files are intentionally excluded from GitHub and from the Docker build context.
 
-## Start The Bridge
+### C. Configure `.env`
 
-From this folder:
+Copy the example file:
+
+```powershell
+Copy-Item .env.example .env
+notepad .env
+```
+
+Recommended settings when models live inside this repository:
+
+```text
+HF_HOME_HOST=./.cache/huggingface
+TEXT_ENCODER_BASE_MODEL_HOST=./text-encoders/McGill-NLP/LLM2Vec-Meta-Llama-3-8B-Instruct-mntp
+TEXT_ENCODER_MNTP_ADAPTER_HOST=./text-encoders/McGill-NLP/LLM2Vec-Meta-Llama-3-8B-Instruct-mntp-adapter
+TEXT_ENCODER_ADAPTER_HOST=./text-encoders/McGill-NLP/LLM2Vec-Meta-Llama-3-8B-Instruct-mntp-supervised
+UE_BRIDGE_HOST_PORT=18027
+TEXT_ENCODER_DEVICE=auto
+KIMODO_OUTPUT_HOST=./outputs
+```
+
+`KIMODO_OUTPUT_HOST` is the host folder where generated results are written. For the best UE experience, set it to an absolute path such as:
+
+```text
+KIMODO_OUTPUT_HOST=D:/EmbodiedSpaceStudio/KimodoBridge/outputs
+```
+
+The helper start script sets `KIMODO_OUTPUT_HOST` to an absolute `outputs` path automatically if it is not already set in the terminal environment.
+
+### D. Build And Start Docker
+
+With Docker Desktop installed and running, use the helper script:
 
 ```powershell
 .\scripts\Start-EmbodiedSpaceStudio-Bridge.ps1 -Build
@@ -115,21 +105,36 @@ After the first build, start without rebuilding:
 .\scripts\Start-EmbodiedSpaceStudio-Bridge.ps1
 ```
 
+Equivalent Docker commands:
+
+```powershell
+docker compose build
+docker compose up -d text-encoder ue-bridge
+```
+
 To also start the browser-based Kimodo demo:
 
 ```powershell
 .\scripts\Start-EmbodiedSpaceStudio-Bridge.ps1 -WithDemo
 ```
 
-Equivalent Docker commands:
+or:
 
 ```powershell
-docker compose build
-docker compose up -d text-encoder ue-bridge
 docker compose up -d demo
 ```
 
-Service URLs:
+### E. Connect From Unreal Engine
+
+Open any Unreal project that has the EmbodiedSpaceStudio / KimodoMotionAuthoring plugin installed. The plugin should connect to:
+
+```text
+http://127.0.0.1:18027/bridge/v1
+```
+
+The Docker bridge is independent from the UE project folder. Multiple compatible UE projects can use the same local bridge by connecting to the same endpoint.
+
+## Service URLs
 
 - UE bridge health: `http://127.0.0.1:18027/bridge/v1/health`
 - Available models: `http://127.0.0.1:18027/bridge/v1/models`
@@ -142,16 +147,7 @@ Service URLs:
 .\scripts\Verify-EmbodiedSpaceStudio-Bridge.ps1
 ```
 
-This checks:
-
-- The Unreal project and plugin files.
-- The Docker bridge files.
-- Required checkpoint and text encoder files.
-- Whether the UE bridge health endpoint is reachable.
-
-Inside Unreal Engine, open the EmbodiedSpaceStudio project and use the
-`KimodoMotionAuthoring` plugin. The plugin should connect to the bridge on
-`127.0.0.1:18027` unless you changed `UE_BRIDGE_HOST_PORT`.
+This checks the Docker bridge files, local bridge API service, required checkpoint files, required text encoder files, and whether the bridge health endpoint is reachable.
 
 ## Stop The Bridge
 
@@ -171,14 +167,12 @@ This release updates the Docker packaging for user-side installation:
 
 - `kimodo-viser` is vendored locally in this repository.
 - Docker no longer clones `https://github.com/nv-tlabs/kimodo-viser.git` during build.
-- `kimodo-viser/src/viser/client/build` is included so the runtime does not need to rebuild the
-  web client with npm.
-- `node_modules`, Hugging Face caches, checkpoints, text encoder weights, and local virtual
-  environments are excluded from Git and Docker build context.
-- Docker default requirements no longer install `py-soma-x` from GitHub. The optional SOMA layer
-  skin path still requires the SOMA package if you enable that feature manually.
-- `MotionCorrection` expects Docker-installed `pybind11-dev` and `libeigen3-dev`; it will not fetch
-  those dependencies from GitHub/GitLab by default.
+- `kimodo-viser/src/viser/client/build` is included so the runtime does not need to rebuild the web client with npm.
+- The `ue-bridge` container runs the bridge API service packaged in this repository and no longer mounts a specific Unreal project.
+- Generated outputs are written to `KIMODO_OUTPUT_HOST`, usually this repository's `outputs/` folder.
+- `node_modules`, Hugging Face caches, checkpoints, text encoder weights, generated outputs, and local virtual environments are excluded from Git and Docker build context.
+- Docker default requirements no longer install `py-soma-x` from GitHub. The optional SOMA layer skin path still requires the SOMA package if you enable that feature manually.
+- `MotionCorrection` expects Docker-installed `pybind11-dev` and `libeigen3-dev`; it will not fetch those dependencies from GitHub/GitLab by default.
 
 ## Troubleshooting
 
@@ -194,6 +188,11 @@ If Unreal cannot connect:
 - Open `http://127.0.0.1:18027/bridge/v1/health` in a browser.
 - Check logs with `docker compose logs --tail 120 ue-bridge`.
 
+If Unreal cannot open generated results:
+
+- Set `KIMODO_OUTPUT_HOST` in `.env` to an absolute Windows path.
+- Restart `ue-bridge` with `docker compose up -d --force-recreate ue-bridge`.
+
 If GPU memory is limited:
 
 - Set `TEXT_ENCODER_DEVICE=cpu` in `.env`.
@@ -201,7 +200,4 @@ If GPU memory is limited:
 
 ## Upstream Credits And License
 
-Kimodo is an NVIDIA motion generation project. This bridge packages the parts needed for
-EmbodiedSpaceStudio integration and local Docker deployment. See `LICENSE`, `ATTRIBUTIONS.MD`, and
-the model license pages for the licenses that apply to source code, third-party dependencies, and
-downloaded model weights.
+Kimodo is an NVIDIA motion generation project. This bridge packages the parts needed for EmbodiedSpaceStudio integration and local Docker deployment. See `LICENSE`, `ATTRIBUTIONS.MD`, and the model license pages for the licenses that apply to source code, third-party dependencies, and downloaded model weights.

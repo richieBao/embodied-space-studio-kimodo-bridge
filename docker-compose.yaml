@@ -104,7 +104,7 @@ services:
     container_name: ue-bridge
     working_dir: /workspace
     command: >
-      python /workspace-ue/Plugins/KimodoMotionAuthoring/Resources/Python/kimodo_ue_service/server.py
+      python /workspace/ue_bridge_service/kimodo_ue_service/server.py
       --host 0.0.0.0
       --port 50127
       --checkpoint-root /workspace/checkpoints
@@ -114,7 +114,7 @@ services:
       - "${HF_HOME_HOST}:/workspace/.cache/huggingface"
       - ./checkpoints:/workspace/checkpoints:ro
       - ./text-encoders:/workspace/text-encoders:ro
-      - "../UnrealProject:/workspace-ue"
+      - "${KIMODO_OUTPUT_HOST:-./outputs}:/workspace/outputs"
     ports:
       - "127.0.0.1:${UE_BRIDGE_HOST_PORT:-18027}:50127"
     environment:
@@ -122,8 +122,13 @@ services:
       - TEXT_ENCODER_URL=http://text-encoder:9550/
       - HOST_USER=${HOST_USER:-user}
       - KIMODO_VENDOR_ROOT=/workspace
-      - KIMODO_UE_PLUGIN_ROOT=/workspace-ue/Plugins/KimodoMotionAuthoring
-
+      - KIMODO_UE_PROJECT_ROOT=/workspace
+      - KIMODO_UE_PLUGIN_ROOT=/workspace/ue_bridge_service
+      - KIMODO_UE_PYTHON_ROOT=/workspace/ue_bridge_service
+      - KIMODO_UE_OUTPUT_ROOT=/workspace/outputs
+      - KIMODO_UE_LOG_ROOT=/workspace/logs
+      - KIMODO_BRIDGE_OUTPUT_ROOT=/workspace/outputs
+      - KIMODO_BRIDGE_OUTPUT_HOST_ROOT=${KIMODO_OUTPUT_HOST:-./outputs}
       # GPU
       - NVIDIA_VISIBLE_DEVICES=all
       - NVIDIA_DRIVER_CAPABILITIES=compute,utility

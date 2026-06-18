@@ -1,0 +1,1 @@
+﻿"""Kimodo Motion Authoring service package for Unreal Engine."""
