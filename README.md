@@ -40,7 +40,22 @@ Open a terminal in that folder before running the commands below.
 
 ### B. Download Model Files
 
-Put the Kimodo checkpoint under:
+Model weights are intentionally not included in this GitHub repository. Download them from the official model pages and review their licenses before use.
+
+Install the Hugging Face CLI and authenticate on the host machine:
+
+```powershell
+pip install --upgrade huggingface_hub
+hf auth login
+```
+
+Download the Kimodo checkpoint from:
+
+```text
+https://huggingface.co/nvidia/Kimodo-SOMA-RP-v1.1
+```
+
+Place it under:
 
 ```text
 checkpoints/
@@ -50,7 +65,32 @@ checkpoints/
     stats/
 ```
 
-Put the text encoder folders under:
+Example command:
+
+```powershell
+hf download nvidia/Kimodo-SOMA-RP-v1.1 --local-dir checkpoints/Kimodo-SOMA-RP-v1.1
+```
+
+Before downloading the text encoder base model, open the gated Meta Llama model page, request access, and wait until your Hugging Face account has been granted access:
+
+```text
+https://huggingface.co/meta-llama/Meta-Llama-3-8B-Instruct
+```
+
+Kimodo's LLM2Vec text encoder uses three pieces:
+
+```text
+Raw gated base model:
+https://huggingface.co/meta-llama/Meta-Llama-3-8B-Instruct
+
+MNTP LoRA adapter:
+https://huggingface.co/McGill-NLP/LLM2Vec-Meta-Llama-3-8B-Instruct-mntp
+
+Supervised LoRA adapter:
+https://huggingface.co/McGill-NLP/LLM2Vec-Meta-Llama-3-8B-Instruct-mntp-supervised
+```
+
+Place them under:
 
 ```text
 text-encoders/
@@ -60,7 +100,23 @@ text-encoders/
     LLM2Vec-Meta-Llama-3-8B-Instruct-mntp-supervised/
 ```
 
-The large model files are intentionally excluded from GitHub and from the Docker build context.
+Example commands:
+
+```powershell
+hf download meta-llama/Meta-Llama-3-8B-Instruct --local-dir text-encoders/McGill-NLP/LLM2Vec-Meta-Llama-3-8B-Instruct-mntp
+hf download McGill-NLP/LLM2Vec-Meta-Llama-3-8B-Instruct-mntp --local-dir text-encoders/McGill-NLP/LLM2Vec-Meta-Llama-3-8B-Instruct-mntp-adapter
+hf download McGill-NLP/LLM2Vec-Meta-Llama-3-8B-Instruct-mntp-supervised --local-dir text-encoders/McGill-NLP/LLM2Vec-Meta-Llama-3-8B-Instruct-mntp-supervised
+```
+
+The `LLM2Vec-Meta-Llama-3-8B-Instruct-mntp` local folder should contain the gated raw Meta Llama files, including `model.safetensors.index.json` and shard files. The `...-mntp-adapter` and `...-mntp-supervised` folders are LoRA adapters and should include `adapter_model.safetensors` and `adapter_config.json`.
+
+Do not download a separate `McGill-NLP/LLM2Vec-Meta-Llama-3-8B-Instruct-mntp-adapter` repository. The local folder is named `LLM2Vec-Meta-Llama-3-8B-Instruct-mntp-adapter` only to make its runtime role clear. Its source is `McGill-NLP/LLM2Vec-Meta-Llama-3-8B-Instruct-mntp`.
+
+Runtime loading order:
+
+1. Load raw `meta-llama/Meta-Llama-3-8B-Instruct` files from `TEXT_ENCODER_BASE_MODEL_HOST`.
+2. Merge the MNTP adapter from `TEXT_ENCODER_MNTP_ADAPTER_HOST`.
+3. Apply the supervised adapter from `TEXT_ENCODER_ADAPTER_HOST`.
 
 ### C. Configure `.env`
 
